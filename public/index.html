@@ -79,7 +79,7 @@ html,body{background:#080c12;overflow:hidden;font-family:'Segoe UI',sans-serif;c
   <div class="hud">
     <div class="hpn" id="myn" style="color:#ff6600">YOU — P1</div>
     <div class="hv"><span id="myl">1</span><span style="font-size:13px;color:#333"> / 3</span></div>
-    <div class="hs">Speed: <span id="mys">0</span> km/h</div>
+    <div class="hs">Speed: <span id="mys">0</span> <span style="color:#ff6600;font-weight:700;">km/h</span></div>
     <div class="hs">Best: <span id="myb">--:--.--</span></div>
     <div class="hp" id="myp"></div>
   </div>
@@ -93,7 +93,7 @@ html,body{background:#080c12;overflow:hidden;font-family:'Segoe UI',sans-serif;c
 </div>
 
 <div id="cdo"></div>
-<div id="ww">⚠️ WRONG WAY!</div>
+<div id="ww" style="display:none">⚠️ WRONG WAY!</div>
 <div id="fover">
   <h2 id="ft"></h2>
   <div class="ft" id="fs"></div>
@@ -425,7 +425,7 @@ function buildCars(){
 }
 
 // ── PHYSICS ──
-var MAX=0.011,ACC=0.00022,BRK=0.0004,DRG=0.00014,TRN=0.025;
+var MAX=0.022,ACC=0.00042,BRK=0.0006,DRG=0.00004,TRN=0.022;
 var keys={};
 document.addEventListener('keydown',function(e){keys[e.code]=true;['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.code)>=0&&e.preventDefault();});
 document.addEventListener('keyup',function(e){keys[e.code]=false;});
@@ -441,7 +441,8 @@ function physicsStep(dt,el){
     if(myState.speed>0.0005) myState.speed-=BRK*dt;
     else myState.speed=Math.max(-MAX*0.35, myState.speed-ACC*dt*0.6);
   }
-  myState.speed-=DRG*dt;
+  if(myState.speed>0) myState.speed-=DRG*dt;
+  else if(myState.speed<0&&!(keys['KeyS']||keys['ArrowDown'])) myState.speed+=DRG*dt*3;
   myState.speed=Math.max(-MAX*0.35, Math.min(MAX, myState.speed));
 
   // Steering
@@ -482,9 +483,7 @@ function physicsStep(dt,el){
   if(tDelta>0.5)tDelta-=1;
   if(tDelta>0) myState.t=bt;
 
-  // Wrong way detection
-  myState.tDir=myState.tDir*0.96+(tDelta>0?0.04:-0.04);
-  $('ww').style.display=(myState.tDir<-0.015&&Math.abs(myState.speed)>MAX*0.1)?'block':'none';
+
 
   // Checkpoint system
   var cps=[0.25,0.5,0.75];
@@ -506,6 +505,23 @@ function physicsStep(dt,el){
     if(myState.lap>3){myState.finished=true;socket.emit('finished',{time:el*1000});}
   }
   myState.lastT=myState.t;
+
+  // Car collision with opponent
+  if(oppState&&oppCar){
+    var dx=myState.x-oppState.x, dz=myState.z-oppState.z;
+    var dist=Math.sqrt(dx*dx+dz*dz);
+    var minDist=4.5; // car width
+    if(dist<minDist&&dist>0.1){
+      var overlap=(minDist-dist)/minDist;
+      var nx2=dx/dist, nz2=dz/dist;
+      // Push my car away
+      myState.x+=nx2*overlap*2;
+      myState.z+=nz2*overlap*2;
+      // Slow both down on collision
+      myState.speed*=0.6;
+      myCar.position.set(myState.x,0,myState.z);
+    }
+  }
 
   // Emit to server
   var now=Date.now();
@@ -563,8 +579,8 @@ function animate(ts){
     oppWheels.forEach(function(w){w.rotation.x=oppState._spin;});
   }
   if(gameState==='racing'&&myState){
-    $('mys').textContent=Math.round(Math.abs(myState.speed)/MAX*240);
-    $('opps').textContent=Math.round(Math.abs(oppState&&oppState.speed||0)/MAX*240);
+    $('mys').textContent=Math.round(Math.abs(myState.speed)/MAX*320);
+    $('opps').textContent=Math.round(Math.abs(oppState&&oppState.speed||0)/MAX*320);
     $('myl').textContent=Math.min(myState.lap,3);
     $('oppl').textContent=Math.min(oppState&&oppState.lap||1,3);
     $('myb').textContent=fmt(myState.bestLap);
