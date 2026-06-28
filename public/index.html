@@ -291,8 +291,11 @@ $('name-btn').addEventListener('click',function(){
   $('lobby').style.display='flex';
   $('my-name-display').textContent=myName;
   updateMoneyDisplay();
-  initLobbyScene();
   initSocket();
+  // Init 3D after a small delay so DOM is ready
+  setTimeout(function(){
+    try{ initLobbyScene(); } catch(e){ console.warn('3D init failed:',e); }
+  }, 300);
 });
 $('name-input').addEventListener('keydown',function(e){if(e.key==='Enter')$('name-btn').click();});
 
@@ -317,12 +320,11 @@ function showTab(tab){
 // Lobby 3D car
 var lobbyRenderer,lobbyScene,lobbyCamera,lobbyCar;
 function initLobbyScene(){
+  if(typeof THREE==='undefined'){setTimeout(initLobbyScene,500);return;}
   var c=$('my-car-canvas');
   if(!c||lobbyRenderer)return;
-  setTimeout(function(){
-    c.width=c.offsetWidth||innerWidth; c.height=c.offsetHeight||(innerHeight-196);
-  },50);
-  c.width=innerWidth; c.height=innerHeight-196;
+  c.width=Math.max(c.offsetWidth,innerWidth)||innerWidth;
+  c.height=Math.max(c.offsetHeight,innerHeight-196)||(innerHeight-196);
   lobbyRenderer=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true});
   lobbyRenderer.setSize(c.width,c.height);
   lobbyScene=new THREE.Scene();
