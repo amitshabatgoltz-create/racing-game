@@ -447,25 +447,39 @@ function renderLeaderboard(){
 }
 
 // Socket
-var socket,myId,myNum,players={},gameState='lobby',raceStart=0;
+var socket,myId,myNum,players={},lobbyPlayers={},gameState='lobby',raceStart=0;
 var isSearching=false;
 
 function initSocket(){
   socket=io();
-  socket.on('connect',function(){socket.emit('join',{name:myName,wins:myWins});});
+  socket.on('connect',function(){socket.emit('join',{name:myName,wins:myWins,carId:myCarId,carColor:myCarColor});});
   socket.on('room_full',function(){$('lobby-status').textContent='Room is full!';});
-  socket.on('joined',function(d){
-    myId=d.yourId;myNum=d.yourNum;players=d.players;
+  socket.on('joined_lobby',function(d){
+    myId=socket.id;
+    lobbyPlayers=d.players;
+    $('lobby-status').textContent='Online: '+Object.keys(lobbyPlayers).length+' players';
+    if(isSearching) renderOnlinePlayers();
+  });
+  socket.on('lobby_update',function(d){
+    lobbyPlayers=d;
+    $('lobby-status').textContent='Online: '+Object.keys(lobbyPlayers).length+' players';
+    if(isSearching) renderOnlinePlayers();
+  });
+  socket.on('room_created',function(d){
+    // We are now in a room with another player
+    players={};
+    Object.values(d.players).forEach(function(p){
+      players[p.id]=p;
+      if(p.id===myId) myNum=p.num;
+    });
     updateLobbyPlayers();
-    $('lobby-status').textContent='Connected! '+Object.keys(players).length+'/5 players';
-    if(isSearching){$('searching').style.display='none';isSearching=false;}
+    $('lobby-status').textContent='Room ready! Press PLAY when ready.';
+    $('play-btn').disabled=false;
   });
-  socket.on('player_joined',function(p){
-    players[p.id]=p; updateLobbyPlayers();
-    $('lobby-status').textContent=p.name+' joined!';
-    if(isSearching){$('searching').style.display='none';isSearching=false;}
+  socket.on('player_ready',function(d){
+    if(players[d.id])players[d.id].ready=true;
+    updateLobbyPlayers();
   });
-  socket.on('player_ready',function(d){if(players[d.id])players[d.id].ready=true;updateLobbyPlayers();});
   socket.on('player_left',function(d){delete players[d.id];updateLobbyPlayers();if(gameState==='racing')$('disc').style.display='block';});
 
   socket.on('receive_invite',function(d){
@@ -548,7 +562,7 @@ function updateLobbyPlayers(){
   $('waiting-list').innerHTML=html;
   // Play button
   var myReady=players[myId]&&players[myId].ready;
-  $('play-btn').disabled=myReady||pArr.length<2;
+  $('play-btn').disabled=myReady||pArr.length<2||Object.keys(players).length<2;
   $('play-btn').textContent=myReady?'WAITING...':'PLAY';
   $('lobby-status').textContent=pArr.length+'/5 players · '+pArr.filter(function(p){return p.ready;}).length+' ready';
 }
@@ -566,7 +580,7 @@ function cancelSearch(){
 }
 
 function renderOnlinePlayers(){
-  var others=Object.values(players).filter(function(p){return p.id!==myId;});
+  var others=Object.values(lobbyPlayers).filter(function(p){return p.id!==myId;});
   var html='';
   if(others.length===0){
     html='<div style="text-align:center;color:#444;margin-top:40px;font-size:14px;">No other players online right now.<br><br>Share the link to invite friends!</div>';
@@ -597,6 +611,7 @@ function acceptInvite(){
 }
 
 function declineInvite(){
+  if(pendingInviteFrom) socket.emit('decline_invite',{fromId:pendingInviteFrom});
   $('invite-notif').style.display='none';
   pendingInviteFrom=null;
 }
