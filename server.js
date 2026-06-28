@@ -78,6 +78,25 @@ io.on('connection', (socket) => {
     socket.to('main').emit('player_update', { id: socket.id, ...data });
   });
 
+  socket.on('send_invite', (data) => {
+    const target = io.sockets.sockets.get(data.targetId);
+    if(target){
+      target.emit('receive_invite', {
+        fromId: socket.id,
+        fromName: data.fromName,
+        carId: data.carId,
+        carColor: data.carColor
+      });
+    }
+  });
+
+  socket.on('accept_invite', (data) => {
+    const from = io.sockets.sockets.get(data.fromId);
+    if(from && room.players[data.fromId]){
+      from.emit('invite_accepted', { name: room.players[socket.id]?.name || 'Player' });
+    }
+  });
+
   socket.on('finished', (data) => {
     if(!room.players[socket.id]) return;
     room.players[socket.id].finished = true;
