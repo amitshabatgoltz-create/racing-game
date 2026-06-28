@@ -568,11 +568,42 @@ function fmt(s){
   return m+':'+(sec<10?'0':'')+sec.toFixed(2);
 }
 
+
+// ── GAMEPAD SUPPORT (Xbox / PlayStation) ──
+function updateGamepad(){
+  var gps = navigator.getGamepads ? navigator.getGamepads() : [];
+  for(var i=0;i<gps.length;i++){
+    var gp = gps[i];
+    if(!gp) continue;
+    // Left stick X axis (axis 0) for steering
+    var steerAxis = gp.axes[0]; // -1 left, +1 right
+    // Right trigger (button 7) = gas, Left trigger (button 6) = brake
+    // Also support D-pad and face buttons
+    var gas   = gp.buttons[7] ? gp.buttons[7].value > 0.1 : false; // RT
+    var brake = gp.buttons[6] ? gp.buttons[6].value > 0.1 : false; // LT
+    // Also A button (0) = gas, B button (1) = brake
+    if(gp.buttons[0] && gp.buttons[0].pressed) gas = true;
+    if(gp.buttons[1] && gp.buttons[1].pressed) brake = true;
+    // D-pad
+    if(gp.buttons[12] && gp.buttons[12].pressed) gas = true;   // up
+    if(gp.buttons[13] && gp.buttons[13].pressed) brake = true; // down
+
+    // Apply to keys
+    keys['KeyW'] = keys['KeyW'] || gas;
+    keys['KeyS'] = keys['KeyS'] || brake;
+    if(Math.abs(steerAxis) > 0.15){
+      keys['KeyA'] = steerAxis < -0.15;
+      keys['KeyD'] = steerAxis > 0.15;
+    }
+  }
+}
+
 var last=null;
 function animate(ts){
   requestAnimationFrame(animate);
   var dt=last?Math.min(ts-last,50):16;last=ts;
   var el=(Date.now()-raceStart)/1000;
+  updateGamepad();
   physicsStep(dt,el);
   if(oppCar&&oppState&&oppState.speed){
     oppState._spin=(oppState._spin||0)+oppState.speed*dt*3;
