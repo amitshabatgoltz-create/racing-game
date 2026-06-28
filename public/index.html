@@ -66,6 +66,19 @@ html,body{background:#080c12;overflow:hidden;font-family:'Segoe UI',sans-serif;c
 #disc{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.92);border:1px solid rgba(255,80,80,0.25);border-radius:12px;padding:30px 50px;text-align:center;z-index:50;}
 
 /* Mobile */
+
+/* Fancy lobby */
+#namescreen{background:#080c12;}
+#lobby{background:#080c12;}
+.slot{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.slot:last-child{border:none;}
+.dot{width:8px;height:8px;border-radius:50%;background:#222;}
+.dot.on{background:#44ff88;}
+.sname{font-size:12px;color:#bbb;flex:1;}
+.swins{font-size:10px;color:#666;}
+.sstat{font-size:10px;color:#444;}
+.sstat.ok{color:#44ff88;}
+#ready-btn:disabled{background:#222;color:#555;cursor:default;}
 #mobile-controls{display:none;position:fixed;bottom:0;left:0;right:0;z-index:20;pointer-events:none;padding:20px;}
 #joystick-zone{position:fixed;bottom:30px;left:30px;width:130px;height:130px;pointer-events:all;}
 #joystick-base{width:130px;height:130px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);border-radius:50%;}
@@ -82,23 +95,50 @@ html,body{background:#080c12;overflow:hidden;font-family:'Segoe UI',sans-serif;c
 
 <!-- NAME SCREEN -->
 <div id="namescreen">
-  <h1>McLAREN RACING</h1>
-  <p>ONLINE MULTIPLAYER</p>
-  <input id="name-input" type="text" placeholder="Enter your name..." maxlength="16" autocomplete="off"/>
-  <button id="name-btn">ENTER RACE →</button>
+  <canvas id="lobby-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;"></canvas>
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+    <div style="font-size:11px;letter-spacing:.3em;color:#ff6600;margin-bottom:4px;">McLAREN RACING</div>
+    <h1 style="font-size:52px;font-weight:200;letter-spacing:.1em;color:#fff;margin-bottom:40px;text-shadow:0 0 40px rgba(255,102,0,0.5);">ENTER YOUR NAME</h1>
+    <input id="name-input" type="text" placeholder="Your racing name..." maxlength="16" autocomplete="off"
+      style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,102,0,0.5);border-radius:10px;padding:16px 28px;font-size:20px;color:#fff;text-align:center;width:320px;outline:none;margin-bottom:20px;"/>
+    <button id="name-btn" style="background:linear-gradient(135deg,#ff6600,#ff9900);color:#fff;border:none;border-radius:10px;padding:16px 52px;font-size:18px;cursor:pointer;letter-spacing:.08em;box-shadow:0 0 30px rgba(255,102,0,0.4);">START RACING →</button>
+  </div>
 </div>
 
 <!-- LOBBY -->
 <div id="lobby">
-  <h1>McLAREN RACING</h1>
-  <p>ONLINE MULTIPLAYER</p>
-  <div class="lbox">
-    <h3>RACE LOBBY — UP TO 5 PLAYERS</h3>
-    <div id="slots"></div>
+  <canvas id="lobby-canvas2" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;"></canvas>
+  <!-- Left: Profile -->
+  <div style="position:absolute;top:0;left:0;bottom:0;width:260px;background:rgba(0,0,0,0.7);border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;padding:30px 24px;z-index:2;">
+    <div style="font-size:10px;letter-spacing:.2em;color:#ff6600;margin-bottom:4px;">McLAREN RACING</div>
+    <div style="font-size:22px;font-weight:600;color:#fff;margin-bottom:4px;" id="profile-name">—</div>
+    <div style="font-size:12px;color:#555;margin-bottom:20px;">🏆 Wins: <span id="profile-wins" style="color:#ffaa00;">0</span></div>
+    <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:20px;"></div>
+    <div style="font-size:10px;letter-spacing:.12em;color:#444;margin-bottom:12px;">RACE LOBBY</div>
+    <div id="slots" style="flex:1;overflow-y:auto;"></div>
+    <div id="lobby-msg" style="font-size:11px;color:#555;margin-top:10px;min-height:16px;"></div>
+    <div id="need-more" style="font-size:11px;color:#444;margin-bottom:8px;"></div>
+    <button id="ready-btn" disabled style="background:linear-gradient(135deg,#ff6600,#ff9900);color:#fff;border:none;border-radius:10px;padding:14px;font-size:16px;cursor:pointer;letter-spacing:.06em;margin-top:8px;">READY</button>
   </div>
-  <div id="lobby-msg">Connecting...</div>
-  <button id="ready-btn" disabled>READY</button>
-  <div id="need-more"></div>
+  <!-- Center: 3D Car -->
+  <div style="position:absolute;inset:0;z-index:1;pointer-events:none;" id="lobby-3d-container"></div>
+  <!-- Right: Car info -->
+  <div style="position:absolute;top:0;right:0;bottom:0;width:220px;background:rgba(0,0,0,0.7);border-left:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;padding:30px 20px;z-index:2;">
+    <div style="font-size:10px;letter-spacing:.15em;color:#444;margin-bottom:8px;">YOUR CAR</div>
+    <div style="font-size:18px;font-weight:600;color:#fff;margin-bottom:4px;">McLaren MCL39</div>
+    <div style="font-size:12px;color:#555;margin-bottom:20px;">Formula One</div>
+    <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:20px;"></div>
+    <div style="font-size:10px;letter-spacing:.1em;color:#444;margin-bottom:12px;">STATS</div>
+    <div style="font-size:12px;color:#888;line-height:2.2;">
+      🏎️ Top Speed: <span style="color:#fff;">320 km/h</span><br>
+      ⚡ Acceleration: <span style="color:#fff;">★★★★★</span><br>
+      🔧 Handling: <span style="color:#fff;">★★★★☆</span><br>
+      🛡️ Grip: <span style="color:#fff;">★★★★★</span>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="font-size:10px;letter-spacing:.1em;color:#444;margin-bottom:8px;">YOUR COLOR</div>
+    <div id="color-dot" style="width:40px;height:40px;border-radius:50%;background:#ff6600;border:2px solid rgba(255,255,255,0.2);"></div>
+  </div>
 </div>
 
 <!-- LOADING -->
@@ -155,6 +195,74 @@ if(myName){
   $('name-input').value = myName;
 }
 
+// Lobby 3D spinning car
+var lobbyRenderer, lobbyScene, lobbyCamera, lobbyCar, lobbyAngle=0;
+function initLobbyScene(canvas){
+  if(!canvas||lobbyRenderer) return;
+  lobbyRenderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true});
+  lobbyRenderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
+  lobbyRenderer.shadowMap.enabled=true;
+  lobbyScene = new THREE.Scene();
+  lobbyCamera = new THREE.PerspectiveCamera(45, canvas.offsetWidth/canvas.offsetHeight, 0.1, 100);
+  lobbyCamera.position.set(0, 2.5, 8);
+  lobbyCamera.lookAt(0, 0.5, 0);
+  lobbyScene.add(new THREE.AmbientLight(0x334466, 1.2));
+  var spot = new THREE.SpotLight(0xff6600, 3);
+  spot.position.set(0, 8, 4); spot.angle=0.4; spot.penumbra=0.5;
+  lobbyScene.add(spot);
+  var fill = new THREE.DirectionalLight(0x4488ff, 0.8);
+  fill.position.set(-5, 3, -3); lobbyScene.add(fill);
+  // Floor
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(30,30), new THREE.MeshStandardMaterial({color:0x111118,roughness:0.8,metalness:0.3}));
+  floor.rotation.x=-Math.PI/2; floor.position.y=-0.35; lobbyScene.add(floor);
+  // Build car
+  lobbyCar = buildLobbycar();
+  animateLobby();
+}
+
+function buildLobbycar(){
+  var g=new THREE.Group();
+  var col = COLORS[myNum?myNum-1:0]||0xff6600;
+  var bm=new THREE.MeshStandardMaterial({color:col,metalness:0.75,roughness:0.2});
+  var dm=new THREE.MeshStandardMaterial({color:0x080810,metalness:0.2,roughness:0.5});
+  var tm=new THREE.MeshStandardMaterial({color:0x060606,roughness:0.95});
+  var rm=new THREE.MeshStandardMaterial({color:0xcccccc,metalness:0.9,roughness:0.1});
+  var gm=new THREE.MeshStandardMaterial({color:0x88aacc,transparent:true,opacity:0.5,roughness:0.05});
+  function add(geo,mat,x,y,z,rx){var m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);if(rx)m.rotation.x=rx;m.castShadow=true;g.add(m);}
+  add(new THREE.BoxGeometry(1.88,0.36,4.1),bm,0,0.43,0);
+  add(new THREE.BoxGeometry(1.3,0.21,1.45),bm,0,0.33,-2.72);
+  add(new THREE.BoxGeometry(2.15,0.065,0.58),bm,0,0.16,-2.62);
+  add(new THREE.BoxGeometry(1.22,0.41,1.62),dm,0,0.73,-0.1);
+  add(new THREE.BoxGeometry(1.08,0.36,0.08),gm,0,0.73,-0.96,0.37);
+  add(new THREE.BoxGeometry(1.72,0.055,0.44),bm,0,0.95,1.9);
+  [-0.73,0.73].forEach(function(x){add(new THREE.BoxGeometry(0.07,0.39,0.17),dm,x,0.71,1.9);});
+  [[1.03,0,1.56],[-1.03,0,1.56],[1.03,0,-1.56],[-1.03,0,-1.56]].forEach(function(wp){
+    var wg=new THREE.Group();
+    var tire=new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.33,0.25,22),tm);tire.rotation.z=Math.PI/2;wg.add(tire);
+    var rim2=new THREE.Mesh(new THREE.TorusGeometry(0.26,0.037,8,20),rm);rim2.rotation.y=Math.PI/2;wg.add(rim2);
+    wg.position.set(wp[0],0.33,wp[2]);g.add(wg);
+  });
+  lobbyScene.add(g);
+  return g;
+}
+
+function animateLobby(){
+  if(!lobbyRenderer) return;
+  requestAnimationFrame(animateLobby);
+  lobbyAngle += 0.008;
+  if(lobbyCar) lobbyCar.rotation.y = lobbyAngle;
+  lobbyRenderer.render(lobbyScene, lobbyCamera);
+}
+
+// Init namescreen lobby 3D
+setTimeout(function(){
+  var c=$('lobby-canvas');
+  if(c&&typeof THREE!=='undefined'){
+    c.width=c.offsetWidth||innerWidth; c.height=c.offsetHeight||innerHeight;
+    initLobbyScene(c);
+  }
+},500);
+
 $('name-btn').addEventListener('click', function(){
   var n = $('name-input').value.trim();
   if(!n) return;
@@ -190,6 +298,14 @@ function initSocket(){
     renderSlots();
     $('lobby-msg').textContent = 'Welcome, '+myName+'! Waiting for players...';
     $('ready-btn').disabled = false;
+    if($('profile-name')) $('profile-name').textContent = myName;
+    if($('profile-wins')) $('profile-wins').textContent = myWins;
+    if($('color-dot')) $('color-dot').style.background = COLOR_NAMES[myNum-1];
+    // Init lobby 3D
+    setTimeout(function(){
+      var c=$('lobby-canvas2');
+      if(c){ c.width=c.offsetWidth; c.height=c.offsetHeight; initLobbyScene(c); }
+    },100);
   });
 
   socket.on('player_joined', function(p){
