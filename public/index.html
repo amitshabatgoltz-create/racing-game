@@ -107,12 +107,13 @@ html,body{background:#080c12;overflow:hidden;font-family:'Segoe UI',sans-serif;c
 
 <!-- LOBBY -->
 <div id="lobby">
-  <canvas id="lobby-canvas2" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;"></canvas>
+  <canvas id="lobby-canvas2" style="position:absolute;top:0;left:260px;right:220px;bottom:0;z-index:0;width:calc(100% - 480px);height:100%;"></canvas>
   <!-- Left: Profile -->
   <div style="position:absolute;top:0;left:0;bottom:0;width:260px;background:rgba(0,0,0,0.7);border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;padding:30px 24px;z-index:2;">
     <div style="font-size:10px;letter-spacing:.2em;color:#ff6600;margin-bottom:4px;">McLAREN RACING</div>
     <div style="font-size:22px;font-weight:600;color:#fff;margin-bottom:4px;" id="profile-name">—</div>
-    <div style="font-size:12px;color:#555;margin-bottom:20px;">🏆 Wins: <span id="profile-wins" style="color:#ffaa00;">0</span></div>
+    <div style="font-size:12px;color:#555;margin-bottom:4px;">🏆 Wins: <span id="profile-wins" style="color:#ffaa00;">0</span></div>
+    <div style="font-size:14px;color:#555;margin-bottom:20px;">💰 <span id="profile-money" style="color:#44ff88;font-weight:600;">5,000</span> cr</div>
     <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:20px;"></div>
     <div style="font-size:10px;letter-spacing:.12em;color:#444;margin-bottom:12px;">RACE LOBBY</div>
     <div id="slots" style="flex:1;overflow-y:auto;"></div>
@@ -190,6 +191,7 @@ var COLOR_NAMES=['#ff6600','#44aaff','#ff44ff','#44ff44','#ffaa44'];
 // ── PERSISTENT STORAGE ──
 var myName = localStorage.getItem('racingName') || '';
 var myWins = parseInt(localStorage.getItem('racingWins') || '0');
+var myMoney = parseInt(localStorage.getItem('racingMoney') || '5000');
 
 if(myName){
   $('name-input').value = myName;
@@ -300,12 +302,17 @@ function initSocket(){
     $('ready-btn').disabled = false;
     if($('profile-name')) $('profile-name').textContent = myName;
     if($('profile-wins')) $('profile-wins').textContent = myWins;
+    if($('profile-money')) $('profile-money').textContent = myMoney.toLocaleString();
     if($('color-dot')) $('color-dot').style.background = COLOR_NAMES[myNum-1];
     // Init lobby 3D
     setTimeout(function(){
       var c=$('lobby-canvas2');
-      if(c){ c.width=c.offsetWidth; c.height=c.offsetHeight; initLobbyScene(c); }
-    },100);
+      if(c){
+        c.width=c.offsetWidth||innerWidth-480;
+        c.height=c.offsetHeight||innerHeight;
+        initLobbyScene(c);
+      }
+    },200);
   });
 
   socket.on('player_joined', function(p){
@@ -363,10 +370,18 @@ function initSocket(){
   socket.on('race_finished', function(d){
     gameState='finished';
     var won = d.winnerId===myId;
+    // Money rewards based on position
+    var pArr2=Object.values(players);
+    pArr2.sort(function(a,b){return (b.lap||1)-(a.lap||1)||(b.t||0)-(a.t||0);});
+    var myPos=pArr2.findIndex(function(p){return p.id===myId;})+1;
+    var rewards=[1000,600,300,150,75];
+    var earned=rewards[Math.min(myPos-1,4)]||50;
+    myMoney+=earned; localStorage.setItem('racingMoney',myMoney);
     if(won){ myWins++; localStorage.setItem('racingWins', myWins); }
     var wc = won?COLOR_NAMES[myNum-1]:'#aaa';
     $('ft').innerHTML = won ? '🏆 <span style="color:'+wc+'">You Win!</span>' : '🏁 <span style="color:'+COLOR_NAMES[(players[d.winnerId]&&players[d.winnerId].num||1)-1]+'">'+d.winnerName+'</span> Wins!';
-    $('fs').innerHTML = 'Race time: '+fmt(d.time/1000)+'<br>Your best lap: '+fmt(myState?myState.bestLap:0)+'<br>Your wins: '+myWins;
+    var posNames=['🥇 1st','🥈 2nd','🥉 3rd','4th','5th'];
+    $('fs').innerHTML = 'Position: <b style="color:#ffaa00">'+(posNames[myPos-1]||myPos+'th')+'</b><br>Race time: '+fmt(d.time/1000)+'<br>Best lap: '+fmt(myState?myState.bestLap:0)+'<br><span style="color:#44ff88">+'+earned+' credits 💰</span><br>Total: '+myMoney.toLocaleString()+' cr';
     $('fover').style.display='block';
   });
 }
