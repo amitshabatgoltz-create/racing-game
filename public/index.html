@@ -550,18 +550,22 @@ function buildMesh(col,sc,carId,callback){
   }
 
   function centerModel(obj,sc2){
+    // Rotate to face correct direction
+    obj.rotation.y = Math.PI;
     var box=new THREE.Box3().setFromObject(obj);
     var size=box.getSize(new THREE.Vector3());
     var maxDim=Math.max(size.x,size.y,size.z);
     var targetSize=4.0;
     var s=targetSize/maxDim;
     obj.scale.set(s,s,s);
+    // Center X/Z
     box.setFromObject(obj);
     var center=box.getCenter(new THREE.Vector3());
-    obj.position.sub(center);
-    // Lift above ground
+    obj.position.x=-center.x;
+    obj.position.z=-center.z;
+    // Sit on ground
     box.setFromObject(obj);
-    obj.position.y=-box.min.y*1.0;
+    obj.position.y=-box.min.y;
   }
 
   if(modelCache[modelUrl]){
