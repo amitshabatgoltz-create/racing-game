@@ -572,7 +572,7 @@ function buildMesh(col,sc,carId,callback){
     var wrapper=new THREE.Group();
     var clone=modelCache[modelUrl].clone();
     // Fix model orientation - wrap in parent, rotate child
-    clone.rotation.set(-Math.PI/2, 0, 0);
+    clone.rotation.set(-Math.PI/2, Math.PI, 0);
     wrapper.add(clone);
     applyColor(wrapper);
     centerModel(wrapper,sc);
