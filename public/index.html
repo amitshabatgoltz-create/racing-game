@@ -373,19 +373,19 @@ var CARS_DATA=[
    colors:[0x4a9eff,0xff6600,0xffffff,0x111111,0xff0000]},
   {id:'ferrari',name:'Ferrari SF-24',type:'Formula One',rarity:'epic',price:3000,
    speed:8.2,accel:8.5,handling:9.0,braking:8.0,nitro:7.5,maxSpd:318,
-   model:'/aston_martin_formula_1_car.glb',scale:0.012,
+   model:'/aston_martin_formula_1_car.glb',
    colors:[0xff0000,0xffff00,0x222222,0xffffff,0xff6600]},
   {id:'redbull',name:'Red Bull RB20',type:'Formula One',rarity:'epic',price:5000,
    speed:9.0,accel:9.5,handling:8.0,braking:8.5,nitro:9.0,maxSpd:322,
-   model:'/aston_martin_formula_1_car.glb',scale:0.012,
+   model:'/aston_martin_formula_1_car.glb',
    colors:[0x001a66,0xffcc00,0xffffff,0x333333,0x0055aa]},
-  {id:'mercedes',name:'Mercedes W15',type:'Formula One',rarity:'rare',price:4000,
+  {id:'mercedes',name:'Aston Martin DBS',type:'GT Car',rarity:'rare',price:4000,
    speed:7.8,accel:8.0,handling:9.5,braking:9.0,nitro:7.0,maxSpd:315,
-   model:'/2020_aston_martin_dbs_gt_zagato__www.vecarz.com.glb',scale:0.018,
+   model:'/2020_aston_martin_dbs_gt_zagato__www.vecarz.com.glb',
    colors:[0x00d2be,0x111111,0xffffff,0x333333,0x888888]},
   {id:'alpine',name:'Alpine A524',type:'Formula One',rarity:'common',price:2500,
    speed:7.5,accel:7.5,handling:8.0,braking:7.5,nitro:7.0,maxSpd:310,
-   model:'/2020_aston_martin_dbs_gt_zagato__www.vecarz.com.glb',scale:0.018,
+   model:'/aston_martin_formula_1_car.glb',
    colors:[0x0055ff,0xff00aa,0xffffff,0x111111,0x00aaff]},
 ];
 function getCarData(id){return CARS_DATA.find(function(c){return c.id===id;})||CARS_DATA[0];}
@@ -550,18 +550,18 @@ function buildMesh(col,sc,carId,callback){
   }
 
   function centerModel(obj,sc2){
-    // Auto-center and scale model
     var box=new THREE.Box3().setFromObject(obj);
-    var center=box.getCenter(new THREE.Vector3());
     var size=box.getSize(new THREE.Vector3());
     var maxDim=Math.max(size.x,size.y,size.z);
     var targetSize=4.0;
     var s=targetSize/maxDim;
     obj.scale.set(s,s,s);
     box.setFromObject(obj);
-    center=box.getCenter(new THREE.Vector3());
+    var center=box.getCenter(new THREE.Vector3());
     obj.position.sub(center);
-    obj.position.y=0;
+    // Lift above ground
+    box.setFromObject(obj);
+    obj.position.y=-box.min.y*1.0;
   }
 
   if(modelCache[modelUrl]){
