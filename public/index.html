@@ -770,11 +770,49 @@ function initThree(){
   sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-200;sun.shadow.camera.right=200;sun.shadow.camera.top=200;sun.shadow.camera.bottom=-200;sun.shadow.camera.far=500;sun.shadow.bias=-0.0003;scene.add(sun);
   scene.add(new THREE.DirectionalLight(0x4466aa,0.5));
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(380,16,8),new THREE.MeshBasicMaterial({color:0x0d1e30,side:THREE.BackSide})));
-  setLoad(20,'Building track...');buildTrack();
+  setLoad(20,'Loading track...');loadTrack();
   setLoad(60,'Building cars...');buildAllCars();
   setLoad(100,'Ready!');
   $('loading').style.display='none';
   requestAnimationFrame(animate);
+}
+
+function loadTrack(){
+  var loader2=new THREE.GLTFLoader();
+  loader2.load('/race_trackkarting_track_based_on_south_garda.glb',function(gltf){
+    var track=gltf.scene;
+    // Auto-scale and center
+    var box=new THREE.Box3().setFromObject(track);
+    var size=box.getSize(new THREE.Vector3());
+    var maxDim=Math.max(size.x,size.z);
+    var s=200/maxDim;
+    track.scale.set(s,s,s);
+    var center=box.getCenter(new THREE.Vector3());
+    track.position.x=-center.x*s;
+    track.position.z=-center.z*s;
+    track.position.y=0;
+    track.receiveShadow=true;
+    track.traverse(function(c){if(c.isMesh){c.receiveShadow=true;c.castShadow=false;}});
+    scene.add(track);
+    setLoad(55,'Track loaded!');
+    // Keep procedural elements for boundaries
+    buildTrackBoundaries();
+  },undefined,function(err){
+    console.warn('Track load failed, using procedural:',err);
+    buildTrack();
+  });
+}
+
+function buildTrackBoundaries(){
+  // Just add grass and sky, track GLB has its own geometry
+  var gr=new THREE.Mesh(new THREE.PlaneGeometry(500,500),new THREE.MeshStandardMaterial({color:0x1a3a12,roughness:1}));
+  gr.rotation.x=-Math.PI/2;gr.position.y=-0.1;gr.receiveShadow=true;scene.add(gr);
+  [[RX+18,12],[RX+18,-12],[-RX-18,22],[-RX-18,-22],[5,-RZ-18],[5,RZ+18]].forEach(function(p){
+    var tr=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.27,2.2,7),new THREE.MeshStandardMaterial({color:0x3d1e08,roughness:1}));
+    tr.position.set(p[0],1.1,p[1]);scene.add(tr);
+    var lv=new THREE.Mesh(new THREE.ConeGeometry(1.7,3.8,7),new THREE.MeshStandardMaterial({color:0x1a5518,roughness:0.9}));
+    lv.position.set(p[0],4,p[1]);scene.add(lv);
+  });
 }
 
 function buildTrack(){
