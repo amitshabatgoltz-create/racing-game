@@ -854,8 +854,8 @@ function physicsStep(dt,el){
   var spd=Math.abs(myState.speed)/myMAX;var ta=TRN*spd*(dt/16);
   if(keys['KeyA']||keys['ArrowLeft'])myState.angle+=ta*(myState.speed>=0?1:-1);
   if(keys['KeyD']||keys['ArrowRight'])myState.angle-=ta*(myState.speed>=0?1:-1);
-  var nx2=myState.x-Math.sin(myState.angle)*myState.speed*dt;
-  var nz2=myState.z-Math.cos(myState.angle)*myState.speed*dt;
+  var nx2=myState.x+Math.sin(myState.angle)*myState.speed*dt;
+  var nz2=myState.z+Math.cos(myState.angle)*myState.speed*dt;
   if(onTrack(nx2,nz2)){myState.x=nx2;myState.z=nz2;}else myState.speed*=0.2;
   myCar.position.set(myState.x,0,myState.z);myCar.rotation.y=myState.angle;
   myState.spin+=myState.speed*dt*3;myWheels.forEach(function(w){w.rotation.x=myState.spin;});
