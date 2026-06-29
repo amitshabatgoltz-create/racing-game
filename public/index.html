@@ -551,9 +551,7 @@ function buildMesh(col,sc,carId,callback){
 
   function centerModel(obj,sc2){
     // Rotate to face correct direction
-    obj.rotation.y = 0;
-    obj.rotation.x = 0;
-    obj.rotation.z = 0;
+    obj.rotation.y = -Math.PI/2;
     var box=new THREE.Box3().setFromObject(obj);
     var size=box.getSize(new THREE.Vector3());
     var maxDim=Math.max(size.x,size.y,size.z);
