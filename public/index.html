@@ -571,7 +571,7 @@ function buildMesh(col,sc,carId,callback){
   if(modelCache[modelUrl]){
     var wrapper=new THREE.Group();
     var clone=modelCache[modelUrl].clone();
-    clone.rotation.set(-Math.PI/2, 0, 0);
+    clone.rotation.set(Math.PI/2, 0, 0);
     wrapper.add(clone);
     applyColor(wrapper);
     centerModel(wrapper,sc);
@@ -595,7 +595,7 @@ function buildMesh(col,sc,carId,callback){
     modelCache[modelUrl]=model;
     var wrapper2=new THREE.Group();
     var clone=model.clone();
-    clone.rotation.set(-Math.PI/2, 0, 0);
+    clone.rotation.set(Math.PI/2, 0, 0);
     wrapper2.add(clone);
     applyColor(wrapper2);
     centerModel(wrapper2,sc);
