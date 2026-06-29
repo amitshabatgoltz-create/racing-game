@@ -571,8 +571,7 @@ function buildMesh(col,sc,carId,callback){
   if(modelCache[modelUrl]){
     var wrapper=new THREE.Group();
     var clone=modelCache[modelUrl].clone();
-    // Fix model orientation - wrap in parent, rotate child
-    clone.rotation.set(0, 0, 0);
+    clone.rotation.set(-Math.PI/2, 0, 0);
     wrapper.add(clone);
     applyColor(wrapper);
     centerModel(wrapper,sc);
@@ -594,11 +593,13 @@ function buildMesh(col,sc,carId,callback){
   loader.load(modelUrl,function(gltf){
     var model=gltf.scene;
     modelCache[modelUrl]=model;
+    var wrapper2=new THREE.Group();
     var clone=model.clone();
-    clone.scale.set(scale,scale,scale);
-    clone.rotation.set(0, 0, 0);
-    applyColor(clone);
-    g.add(clone);
+    clone.rotation.set(-Math.PI/2, 0, 0);
+    wrapper2.add(clone);
+    applyColor(wrapper2);
+    centerModel(wrapper2,sc);
+    g.add(wrapper2);
     if(callback)callback(g);
   },undefined,function(err){
     console.warn('GLB load failed:',err);
