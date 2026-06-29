@@ -551,7 +551,7 @@ function buildMesh(col,sc,carId,callback){
 
   function centerModel(obj,sc2){
     // Rotate to face correct direction
-    obj.rotation.set(0, 0, 0);
+    
     var box=new THREE.Box3().setFromObject(obj);
     var size=box.getSize(new THREE.Vector3());
     var maxDim=Math.max(size.x,size.y,size.z);
@@ -569,10 +569,14 @@ function buildMesh(col,sc,carId,callback){
   }
 
   if(modelCache[modelUrl]){
+    var wrapper=new THREE.Group();
     var clone=modelCache[modelUrl].clone();
-    applyColor(clone);
-    centerModel(clone,sc);
-    g.add(clone);
+    // Fix model orientation - wrap in parent, rotate child
+    clone.rotation.set(-Math.PI/2, 0, 0);
+    wrapper.add(clone);
+    applyColor(wrapper);
+    centerModel(wrapper,sc);
+    g.add(wrapper);
     if(callback)callback(g);
     return g;
   }
