@@ -359,10 +359,6 @@ html,body{background:#0a0e1a;overflow:hidden;font-family:'Segoe UI',sans-serif;c
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/three.min.js"></script>
-<script>
-// GLTFLoader for Three.js r128
-THREE.GLTFLoader=(function(){function e(){this.path='',this.resourcePath='',this.requestHeader={},this.withCredentials=!1,this.manager=THREE.DefaultLoadingManager,this.plugins=[],this.extensions={},this.pluginCallbacks=[],this.register(function(e){return new THREE.GLTFMaterialsUnlitExtension(e)}),this.register(function(e){return new THREE.GLTFMaterialsPBRSpecularGlossiness(e)}),this.register(function(e){return new THREE.GLTFMeshStandardSGMaterial(e)}),this.register(function(e){return new THREE.GLTFLightsExtension(e)}),this.register(function(e){return new THREE.GLTFMeshoptCompression(e)})}return e})();
-</script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 var $=function(id){return document.getElementById(id);};
