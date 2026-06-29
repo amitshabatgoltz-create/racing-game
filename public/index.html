@@ -360,6 +360,11 @@ html,body{background:#0a0e1a;overflow:hidden;font-family:'Segoe UI',sans-serif;c
 <script src="/socket.io/socket.io.js"></script>
 <script src="/three.min.js"></script>
 <script>
+// GLTFLoader for Three.js r128
+THREE.GLTFLoader=(function(){function e(){this.path='',this.resourcePath='',this.requestHeader={},this.withCredentials=!1,this.manager=THREE.DefaultLoadingManager,this.plugins=[],this.extensions={},this.pluginCallbacks=[],this.register(function(e){return new THREE.GLTFMaterialsUnlitExtension(e)}),this.register(function(e){return new THREE.GLTFMaterialsPBRSpecularGlossiness(e)}),this.register(function(e){return new THREE.GLTFMeshStandardSGMaterial(e)}),this.register(function(e){return new THREE.GLTFLightsExtension(e)}),this.register(function(e){return new THREE.GLTFMeshoptCompression(e)})}return e})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
 var $=function(id){return document.getElementById(id);};
 var COLOR_HEX=['#4a9eff','#ff6600','#ff44ff','#44ff88','#ffaa44'];
 var COLORS=[0x4a9eff,0xff6600,0xff44ff,0x44ff88,0xffaa44];
@@ -368,18 +373,23 @@ var COLORS=[0x4a9eff,0xff6600,0xff44ff,0x44ff88,0xffaa44];
 var CARS_DATA=[
   {id:'mclaren',name:'McLaren MCL39',type:'Formula One',rarity:'epic',price:0,
    speed:8.0,accel:9.0,handling:7.0,braking:7.5,nitro:8.5,maxSpd:320,
+   model:'/aston_martin_formula_1_car.glb',scale:0.012,
    colors:[0x4a9eff,0xff6600,0xffffff,0x111111,0xff0000]},
   {id:'ferrari',name:'Ferrari SF-24',type:'Formula One',rarity:'epic',price:3000,
    speed:8.2,accel:8.5,handling:9.0,braking:8.0,nitro:7.5,maxSpd:318,
+   model:'/aston_martin_formula_1_car.glb',scale:0.012,
    colors:[0xff0000,0xffff00,0x222222,0xffffff,0xff6600]},
   {id:'redbull',name:'Red Bull RB20',type:'Formula One',rarity:'epic',price:5000,
    speed:9.0,accel:9.5,handling:8.0,braking:8.5,nitro:9.0,maxSpd:322,
+   model:'/aston_martin_formula_1_car.glb',scale:0.012,
    colors:[0x001a66,0xffcc00,0xffffff,0x333333,0x0055aa]},
   {id:'mercedes',name:'Mercedes W15',type:'Formula One',rarity:'rare',price:4000,
    speed:7.8,accel:8.0,handling:9.5,braking:9.0,nitro:7.0,maxSpd:315,
+   model:'/2020_aston_martin_dbs_gt_zagato__www.vecarz.com.glb',scale:0.018,
    colors:[0x00d2be,0x111111,0xffffff,0x333333,0x888888]},
   {id:'alpine',name:'Alpine A524',type:'Formula One',rarity:'common',price:2500,
    speed:7.5,accel:7.5,handling:8.0,braking:7.5,nitro:7.0,maxSpd:310,
+   model:'/2020_aston_martin_dbs_gt_zagato__www.vecarz.com.glb',scale:0.018,
    colors:[0x0055ff,0xff00aa,0xffffff,0x111111,0x00aaff]},
 ];
 function getCarData(id){return CARS_DATA.find(function(c){return c.id===id;})||CARS_DATA[0];}
@@ -448,8 +458,8 @@ function updateCarDisplay(){
   CARS_DATA.forEach(function(_,i){html+='<div class="car-dot'+(i===currentCarIdx?' active':'')+'" onclick="jumpCar('+i+')"></div>';});
   $('car-nav').innerHTML=html;
   // Rebuild lobby car
-  if(lobbyScene&&lobbyCar){lobbyScene.remove(lobbyCar);}
-  if(lobbyScene) lobbyCar=buildMesh(myCarColor,lobbyScene);
+  if(lobbyScene&&lobbyCar){lobbyScene.remove(lobbyCar);lobbyCar=null;}
+  if(lobbyScene){buildMesh(myCarColor,lobbyScene,myCarId,function(g){lobbyCar=g;});}
 }
 
 function renderMiniCars(){
@@ -510,34 +520,77 @@ function initLobbyScene(){
   // Glow ring
   var ring=new THREE.Mesh(new THREE.TorusGeometry(3.5,0.06,8,48),new THREE.MeshStandardMaterial({color:0x4a9eff,emissive:new THREE.Color(0x4a9eff),emissiveIntensity:2}));
   ring.rotation.x=Math.PI/2; ring.position.y=-0.32; lobbyScene.add(ring);
-  lobbyCar=buildMesh(myCarColor,lobbyScene);
+  lobbyCar=new THREE.Group(); lobbyScene.add(lobbyCar);
+  buildMesh(myCarColor,lobbyScene,myCarId,function(g){lobbyCar=g;});
   var ang=0;
   function loop(){requestAnimationFrame(loop);ang+=0.007;if(lobbyCar)lobbyCar.rotation.y=ang;lobbyRenderer.render(lobbyScene,lobbyCamera);}
   loop();
 }
 
-function buildMesh(col,sc){
+// GLB model cache
+var modelCache={};
+var gltfLoader=null;
+function getLoader(){if(!gltfLoader&&THREE.GLTFLoader)gltfLoader=new THREE.GLTFLoader();return gltfLoader;}
+
+function buildMesh(col,sc,carId,callback){
+  var car=getCarData(carId||myCarId);
+  var modelUrl=car.model;
+  var scale=car.scale||0.012;
   var g=new THREE.Group();
-  var bm=new THREE.MeshStandardMaterial({color:col,metalness:0.75,roughness:0.2});
-  var dm=new THREE.MeshStandardMaterial({color:0x080810,metalness:0.2,roughness:0.5});
-  var tm=new THREE.MeshStandardMaterial({color:0x060606,roughness:0.95});
-  var rm=new THREE.MeshStandardMaterial({color:0xcccccc,metalness:0.9,roughness:0.1});
-  var gm=new THREE.MeshStandardMaterial({color:0x88aacc,transparent:true,opacity:0.5});
-  function add(geo,mat,x,y,z,rx){var m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);if(rx)m.rotation.x=rx;g.add(m);}
-  add(new THREE.BoxGeometry(1.88,0.36,4.1),bm,0,0.43,0);
-  add(new THREE.BoxGeometry(1.3,0.21,1.45),bm,0,0.33,-2.72);
-  add(new THREE.BoxGeometry(2.15,0.065,0.58),bm,0,0.16,-2.62);
-  add(new THREE.BoxGeometry(1.22,0.41,1.62),dm,0,0.73,-0.1);
-  add(new THREE.BoxGeometry(1.08,0.36,0.08),gm,0,0.73,-0.96,0.37);
-  add(new THREE.BoxGeometry(1.72,0.055,0.44),bm,0,0.95,1.9);
-  [-0.73,0.73].forEach(function(x){add(new THREE.BoxGeometry(0.07,0.39,0.17),dm,x,0.71,1.9);});
-  [[1.03,0,1.56],[-1.03,0,1.56],[1.03,0,-1.56],[-1.03,0,-1.56]].forEach(function(wp){
-    var wg=new THREE.Group();
-    var tire=new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.33,0.25,22),tm);tire.rotation.z=Math.PI/2;wg.add(tire);
-    var rim=new THREE.Mesh(new THREE.TorusGeometry(0.26,0.037,8,20),rm);rim.rotation.y=Math.PI/2;wg.add(rim);
-    wg.position.set(wp[0],0.33,wp[2]);g.add(wg);
+  sc.add(g);
+
+  function applyColor(obj){
+    obj.traverse(function(child){
+      if(child.isMesh&&child.material){
+        var mats=Array.isArray(child.material)?child.material:[child.material];
+        mats.forEach(function(m){
+          // Only recolor body parts (not glass/dark parts)
+          if(m.color){
+            var brightness=m.color.r+m.color.g+m.color.b;
+            if(brightness>1.5){m.color.setHex(col);m.metalness=0.7;m.roughness=0.2;}
+          }
+        });
+      }
+    });
+  }
+
+  if(modelCache[modelUrl]){
+    var clone=modelCache[modelUrl].clone();
+    clone.scale.set(scale,scale,scale);
+    clone.rotation.y=Math.PI;
+    applyColor(clone);
+    g.add(clone);
+    if(callback)callback(g);
+    return g;
+  }
+
+  var loader=getLoader();
+  if(!loader){
+    // Fallback to box car
+    var bm=new THREE.MeshStandardMaterial({color:col,metalness:0.75,roughness:0.2});
+    var box=new THREE.Mesh(new THREE.BoxGeometry(1.88,0.5,4.1),bm);
+    box.position.y=0.43;g.add(box);
+    if(callback)callback(g);
+    return g;
+  }
+
+  loader.load(modelUrl,function(gltf){
+    var model=gltf.scene;
+    modelCache[modelUrl]=model;
+    var clone=model.clone();
+    clone.scale.set(scale,scale,scale);
+    clone.rotation.y=Math.PI;
+    applyColor(clone);
+    g.add(clone);
+    if(callback)callback(g);
+  },undefined,function(err){
+    console.warn('GLB load failed:',err);
+    var bm=new THREE.MeshStandardMaterial({color:col,metalness:0.75,roughness:0.2});
+    var box=new THREE.Mesh(new THREE.BoxGeometry(1.88,0.5,4.1),bm);
+    box.position.y=0.43;g.add(box);
+    if(callback)callback(g);
   });
-  sc.add(g); return g;
+  return g;
 }
 
 // Room lobby 3D
