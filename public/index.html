@@ -540,7 +540,6 @@ function buildMesh(col,sc,carId,callback){
       if(child.isMesh&&child.material){
         var mats=Array.isArray(child.material)?child.material:[child.material];
         mats.forEach(function(m){
-          // Only recolor body parts (not glass/dark parts)
           if(m.color){
             var brightness=m.color.r+m.color.g+m.color.b;
             if(brightness>1.5){m.color.setHex(col);m.metalness=0.7;m.roughness=0.2;}
@@ -550,11 +549,25 @@ function buildMesh(col,sc,carId,callback){
     });
   }
 
+  function centerModel(obj,sc2){
+    // Auto-center and scale model
+    var box=new THREE.Box3().setFromObject(obj);
+    var center=box.getCenter(new THREE.Vector3());
+    var size=box.getSize(new THREE.Vector3());
+    var maxDim=Math.max(size.x,size.y,size.z);
+    var targetSize=4.0;
+    var s=targetSize/maxDim;
+    obj.scale.set(s,s,s);
+    box.setFromObject(obj);
+    center=box.getCenter(new THREE.Vector3());
+    obj.position.sub(center);
+    obj.position.y=0;
+  }
+
   if(modelCache[modelUrl]){
     var clone=modelCache[modelUrl].clone();
-    clone.scale.set(scale,scale,scale);
-    clone.rotation.y=Math.PI;
     applyColor(clone);
+    centerModel(clone,sc);
     g.add(clone);
     if(callback)callback(g);
     return g;
@@ -772,19 +785,18 @@ function buildTrack(){
   [[RX+18,12],[RX+18,-12],[-RX-18,22],[-RX-18,-22],[5,-RZ-18],[5,RZ+18]].forEach(function(p){var tr=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.27,2.2,7),new THREE.MeshStandardMaterial({color:0x3d1e08,roughness:1}));tr.position.set(p[0],1.1,p[1]);scene.add(tr);var lv=new THREE.Mesh(new THREE.ConeGeometry(1.7,3.8,7),new THREE.MeshStandardMaterial({color:0x1a5518,roughness:0.9}));lv.position.set(p[0],4,p[1]);scene.add(lv);});
 }
 
-function makeGameCar(col){
+function makeGameCar(col,carId){
   var g=new THREE.Group();
-  var bm=new THREE.MeshStandardMaterial({color:col,metalness:0.75,roughness:0.2});
-  var dm=new THREE.MeshStandardMaterial({color:0x080810,metalness:0.2,roughness:0.5});
-  var tm=new THREE.MeshStandardMaterial({color:0x060606,roughness:0.95});
-  var rm=new THREE.MeshStandardMaterial({color:0xcccccc,metalness:0.9,roughness:0.1});
-  var gm=new THREE.MeshStandardMaterial({color:0x88aacc,transparent:true,opacity:0.5});
-  function add(geo,mat,x,y,z){var m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);m.castShadow=true;g.add(m);}
-  add(new THREE.BoxGeometry(1.88,0.36,4.1),bm,0,0.43,0);add(new THREE.BoxGeometry(1.3,0.21,1.45),bm,0,0.33,-2.72);add(new THREE.BoxGeometry(2.15,0.065,0.58),bm,0,0.16,-2.62);add(new THREE.BoxGeometry(1.22,0.41,1.62),dm,0,0.73,-0.1);add(new THREE.BoxGeometry(1.08,0.36,0.08),gm,0,0.73,-0.96);add(new THREE.BoxGeometry(1.72,0.055,0.44),bm,0,0.95,1.9);
+  scene.add(g);
+  // Use GLB model
+  buildMesh(col,scene,carId,function(loaded){
+    // loaded is already added to scene, move it into g
+    scene.remove(loaded);
+    g.add(loaded);
+  });
+  // Return immediately with empty group + fake wheels for physics
   var warr=[];
-  [[1.03,0,1.56],[-1.03,0,1.56],[1.03,0,-1.56],[-1.03,0,-1.56]].forEach(function(wp){var wg=new THREE.Group();var tire=new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.33,0.25,22),tm);tire.rotation.z=Math.PI/2;wg.add(tire);var rim=new THREE.Mesh(new THREE.TorusGeometry(0.26,0.037,8,20),rm);rim.rotation.y=Math.PI/2;wg.add(rim);wg.position.set(wp[0],0.33,wp[2]);wg.castShadow=true;g.add(wg);warr.push(wg);});
-  // Name label
-  scene.add(g);return{group:g,wheels:warr};
+  return{group:g,wheels:warr};
 }
 
 var startPositions=[{x:90,z:0},{x:86,z:3},{x:86,z:-3},{x:82,z:5},{x:82,z:-5}];
@@ -794,7 +806,8 @@ var myCar,myWheels=[];
 function buildAllCars(){
   Object.values(players).forEach(function(p){
     var col=p.id===myId?myCarColor:(p.carColor||COLORS[p.num-1]||0xffffff);
-    var c=makeGameCar(col);
+    var carId2=p.id===myId?myCarId:(p.carId||'mclaren');
+    var c=makeGameCar(col,carId2);
     cars[p.id]=c.group;
     var sp=startPositions[p.num-1]||startPositions[0];
     c.group.position.set(sp.x,0,sp.z);c.group.rotation.y=Math.PI/2;
